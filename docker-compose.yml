@@ -1,0 +1,58 @@
+version: "3.8"
+services:
+  elasticsearch:
+    image: elasticsearch:7.9.3
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - elasticsearch:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    networks:
+      - elastic
+  kibana:
+    image: kibana:7.9.3
+    environment:
+      - elasticsearch_hosts=elasticsearch:9200
+    volumes:
+      - /etc/localtime:/etc/localtime:ro 
+    ports:
+      - 5601:5601
+    depends_on:
+      - elasticsearch
+    networks:
+      - elastic
+  logstash:
+    image: logstash:7.9.3
+    container_name: logstash
+    volumes:
+      - ~/tutorials/elasticsearch/pipeline/:/usr/share/logstash/pipeline/
+      - ~/tutorials/elasticsearch/plugins/:/usr/share/logstash/plugins/
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      - oracledb
+      - elasticsearch
+    networks:
+      - elastic
+  oracledb:
+    image: store/oracle/database-enterprise:12.2.0.1-slim
+    container_name: oracledb
+    volumes:
+      - /data/OracleDBData:/ORCL
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - 1521:1521
+    networks:
+      - elastic
+    
+volumes:
+  elasticsearch:
+    driver: local
+
+networks:
+  elastic:
+    driver: bridge
